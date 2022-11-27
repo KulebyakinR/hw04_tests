@@ -3,6 +3,7 @@ from http import HTTPStatus
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+
 from posts.models import Group, Post
 
 User = get_user_model()
@@ -48,10 +49,9 @@ class PostURLTests(TestCase):
         self.not_author_client = Client()
         self.not_author_client.force_login(self.user)
 
-    def test_url_exists_at_desired_location(self):
-        """Проверка доступа страниц для разных пользователей
-        (гость, авторизованный, автор)"""
-        list_client_url_code = (
+    def test_url_exists_at_guest_client(self):
+        """Проверка доступа страниц для гостя"""
+        guest_client_url_code = (
             (self.guest_client, self.INDEX, HTTPStatus.OK),
             (self.guest_client, self.GROUP_LIST, HTTPStatus.OK),
             (self.guest_client, self.PROFILE, HTTPStatus.OK),
@@ -59,10 +59,38 @@ class PostURLTests(TestCase):
             (self.guest_client, self.POST_EDIT, HTTPStatus.FOUND),
             (self.guest_client, self.POST_CREATE, HTTPStatus.FOUND),
             (self.guest_client, self.UNEXISTING_PAGE, HTTPStatus.NOT_FOUND),
+        )
+        for client, url, code in guest_client_url_code:
+            with self.subTest(url=url):
+                self.assertEqual(client.get(url).status_code, code)
+
+    def test_url_exists_at_author_client(self):
+        """Проверка доступа страниц для автора"""
+        author_client_url_code = (
+            (self.author_client, self.INDEX, HTTPStatus.OK),
+            (self.author_client, self.GROUP_LIST, HTTPStatus.OK),
+            (self.author_client, self.PROFILE, HTTPStatus.OK),
+            (self.author_client, self.POST_DETAIL, HTTPStatus.OK),
             (self.author_client, self.POST_EDIT, HTTPStatus.OK),
             (self.author_client, self.POST_CREATE, HTTPStatus.OK),
-            (self.not_author_client, self.POST_EDIT, HTTPStatus.FOUND),
+            (self.author_client, self.UNEXISTING_PAGE, HTTPStatus.NOT_FOUND),
         )
-        for client, url, code in list_client_url_code:
+        for client, url, code in author_client_url_code:
+            with self.subTest(url=url):
+                self.assertEqual(client.get(url).status_code, code)
+
+    def test_url_exists_at_not_author_client(self):
+        """Проверка доступа страниц для авторизованного, не автора"""
+        not_author_client_url_code = (
+            (self.not_author_client, self.INDEX, HTTPStatus.OK),
+            (self.not_author_client, self.GROUP_LIST, HTTPStatus.OK),
+            (self.not_author_client, self.PROFILE, HTTPStatus.OK),
+            (self.not_author_client, self.POST_DETAIL, HTTPStatus.OK),
+            (self.not_author_client, self.POST_EDIT, HTTPStatus.FOUND),
+            (self.not_author_client, self.POST_CREATE, HTTPStatus.OK),
+            (self.not_author_client, self.UNEXISTING_PAGE,
+                HTTPStatus.NOT_FOUND)
+        )
+        for client, url, code in not_author_client_url_code:
             with self.subTest(url=url):
                 self.assertEqual(client.get(url).status_code, code)
