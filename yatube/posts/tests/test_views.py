@@ -34,7 +34,6 @@ class PostPagesTests(TestCase):
             group=cls.group,
         )
         
-
     def check_contex(self, context_page):
         context_index = {
             context_page.author.username: self.post.author.username,
@@ -166,6 +165,10 @@ class PostPagesTests(TestCase):
             reverse("posts:group_list", kwargs={"slug": self.group_2.slug})
         ).context['page_obj']
         self.assertNotIn(self.new_post, posts_group_2)
+
+
+
+
 
 
 class PaginatorViewsTest(TestCase):
