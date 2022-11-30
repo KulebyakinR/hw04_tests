@@ -19,21 +19,21 @@ class PostPagesTests(TestCase):
             description="Тестовое описание",
         )
         cls.group_2 = Group.objects.create(
-            title="Тестовая группа 2",
+            title="Тестовая группа2",
             slug="test_slug_2",
             description="Тестовое описание 2",
         )
         cls.new_post = Post.objects.create(
             text='Новейший пост',
             author=cls.user,
-            group=cls.group
+            group=cls.group_2
         )
         cls.post = Post.objects.create(
             author=cls.user,
             text="Тестовый пост",
             group=cls.group,
         )
-        
+
     def check_contex(self, context_page):
         context_index = {
             context_page.author.username: self.post.author.username,
@@ -71,7 +71,7 @@ class PostPagesTests(TestCase):
     def test_index_page_show_correct_context(self):
         """Шаблон posts:index сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:index'))
-        context_page = response.context["page_obj"][0]
+        context_page = response.context["page_obj"][1]
         self.check_contex(context_page)
 
     def test_group_posts_page_show_correct_context(self):
@@ -95,9 +95,9 @@ class PostPagesTests(TestCase):
             )
         )
         object_list = response.context['page_obj'].object_list
-        expected_posts = list(self.group.posts.all())
+        expected_posts = list(Post.objects.filter(author=self.user))
         self.assertListEqual(expected_posts, object_list)
-        context_page = response.context["page_obj"].object_list[0]
+        context_page = response.context["page_obj"].object_list[1]
         self.check_contex(context_page)
         self.assertEqual(context_page.author, self.post.author)
 
@@ -146,29 +146,29 @@ class PostPagesTests(TestCase):
                 self.assertIsInstance(form_field, expected)
 
     def test_new_post_display(self):
-        """Пост есть на главной, в группе и пройфайле"""
-        posts_index = self.authorized_client.get(
-            reverse("posts:index")).context['page_obj']
-        posts_profile = self.authorized_client.get(
-            reverse("posts:profile", kwargs={"username": "auth"})
-        ).context['page_obj']
-        posts_group = self.authorized_client.get(
-            reverse("posts:group_list", kwargs={"slug": "test_slug"})
-        ).context['page_obj']
-        self.assertIn(self.new_post, posts_index)
-        self.assertIn(self.new_post, posts_profile)
-        self.assertIn(self.new_post, posts_group)
+        """Созданный пост появляется на главной, в группе и пройфайле"""
+        group = PostPagesTests.group_2
+        user = PostPagesTests.user
+        post = PostPagesTests.new_post
+        page_names = [
+            reverse('posts:index'),
+            reverse('posts:group_list', kwargs={'slug': group.slug}),
+            reverse('posts:profile', kwargs={'username': user.username})
+        ]
+        for page in page_names:
+            with self.subTest(page=page):
+                response = self.authorized_client.get(page)
+                context_post = response.context['page_obj'][0]
+                self.assertEqual(context_post, post)
 
-    def test_new_post_display(self):
-        """Пост НЕ отображается в другой группе другой группе"""
-        posts_group_2 = self.authorized_client.get(
-            reverse("posts:group_list", kwargs={"slug": self.group_2.slug})
-        ).context['page_obj']
-        self.assertNotIn(self.new_post, posts_group_2)
-
-
-
-
+    def test_post_corrct_not_appear(self):
+        """Пост НЕ отображается в группе, к которой он не пренадлежит"""
+        group = PostPagesTests.group
+        post = PostPagesTests.new_post
+        page = reverse("posts:group_list", kwargs={"slug": group.slug})
+        response = self.authorized_client.get(page)
+        context_post = response.context['page_obj'][0]
+        self.assertNotEqual(context_post, post)
 
 
 class PaginatorViewsTest(TestCase):
