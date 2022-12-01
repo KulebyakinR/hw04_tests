@@ -23,11 +23,7 @@ class PostPagesTests(TestCase):
             slug="test_slug_2",
             description="Тестовое описание 2",
         )
-        cls.new_post = Post.objects.create(
-            text='Новейший пост',
-            author=cls.user,
-            group=cls.group_2
-        )
+
         cls.post = Post.objects.create(
             author=cls.user,
             text="Тестовый пост",
@@ -71,7 +67,7 @@ class PostPagesTests(TestCase):
     def test_index_page_show_correct_context(self):
         """Шаблон posts:index сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('posts:index'))
-        context_page = response.context["page_obj"][1]
+        context_page = response.context["page_obj"][0]
         self.check_contex(context_page)
 
     def test_group_posts_page_show_correct_context(self):
@@ -97,7 +93,7 @@ class PostPagesTests(TestCase):
         object_list = response.context['page_obj'].object_list
         expected_posts = list(Post.objects.filter(author=self.user))
         self.assertListEqual(expected_posts, object_list)
-        context_page = response.context["page_obj"].object_list[1]
+        context_page = response.context["page_obj"].object_list[0]
         self.check_contex(context_page)
         self.assertEqual(context_page.author, self.post.author)
 
@@ -147,9 +143,14 @@ class PostPagesTests(TestCase):
 
     def test_new_post_display(self):
         """Созданный пост появляется на главной, в группе и пройфайле"""
-        group = PostPagesTests.group_2
-        user = PostPagesTests.user
-        post = PostPagesTests.new_post
+        self.new_post = Post.objects.create(
+            text='Новейший пост',
+            author=self.user,
+            group=self.group_2
+        )
+        group = self.group_2
+        user = self.user
+        post = self.new_post
         page_names = [
             reverse('posts:index'),
             reverse('posts:group_list', kwargs={'slug': group.slug}),
@@ -163,8 +164,13 @@ class PostPagesTests(TestCase):
 
     def test_post_corrct_not_appear(self):
         """Пост НЕ отображается в группе, к которой он не пренадлежит"""
-        group = PostPagesTests.group
-        post = PostPagesTests.new_post
+        self.new_post = Post.objects.create(
+            text='Новейший пост',
+            author=self.user,
+            group=self.group_2
+        )
+        group = self.group
+        post = self.new_post
         page = reverse("posts:group_list", kwargs={"slug": group.slug})
         response = self.authorized_client.get(page)
         context_post = response.context['page_obj'][0]
