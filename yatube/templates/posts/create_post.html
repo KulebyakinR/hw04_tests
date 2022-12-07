@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load thumbnail %}
 {% load user_filters %}
 {% block  title %}
   {% if not is_edit %}
@@ -19,7 +20,7 @@
         {% endif %}            
       </div>
       <div class="card-body">        
-        <form method="post" action="{% url 'posts:post_create' %}">
+        <form method="post" action="{% url 'posts:post_create' %}" enctype="multipart/form-data">
           {% csrf_token %}           
           <div class="form-group row my-3 p-3">
             <label for="id_text">
@@ -39,6 +40,12 @@
             <small id="id_group-help" class="form-text text-muted">
               Группа, к которой будет относиться пост
             </small>
+          </div>
+          <div class="form-group row my-3 p-3">
+            <label for="id_image">
+              Картинка                      
+            </label>
+            <input type="file" name="image" accept="image/*" class="form-control" id="id_image">                      
           </div>
           <div class="d-flex justify-content-end">
             <button type="submit" class="btn btn-primary">
