@@ -62,8 +62,9 @@ class Comment(models.Model):
     )
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
-        related_name='author'
+        related_name='author',
+        on_delete=models.SET_NULL,
+        null=True
     )
     text = models.TextField(
         verbose_name='Текст комментария',
@@ -73,3 +74,25 @@ class Comment(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации',
     )
+
+    class Meta:
+        ordering = ['-created']
+
+    def __str__(self):
+        return f"Запись: '{self.post}', автор: '{self.author}'"
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=None,
+        related_name='follower'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following'
+    )
+
+    def __str__(self):
+        return f"Последователь: '{self.user}', автор: '{self.author}'"
